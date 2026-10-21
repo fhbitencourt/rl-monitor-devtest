@@ -1,0 +1,81 @@
+interval_default: 30s
+timeout_default: 5s
+
+thresholds:
+  down_consecutive: 3
+  degraded_consecutive: 1
+
+telegram:
+  bot_token_env: TELEGRAM_BOT_TOKEN
+  chat_id_env: TELEGRAM_CHAT_ID
+
+ldap:
+  base_dn: "dc=example,dc=org"
+  bind_dn: "cn=rl-monitor,ou=services,dc=example,dc=org"
+  bind_pw_env: LDAP_BIND_PW
+  ca_cert: "/etc/rl-monitor/internal-ca.crt"
+
+kerberos:
+  realm: "EXAMPLE.ORG"
+  kdc: "kdc.example.org"
+  principal: "rl-monitor@EXAMPLE.ORG"
+  keytab: "/etc/rl-monitor/rl-monitor.keytab"
+
+sso:
+  url: "https://sso.example.org"
+  realm: "example"
+  member_test_env: SSO_TEST_MEMBER
+  non_member_test_env: SSO_TEST_NON_MEMBER
+
+prometheus:
+  url: "http://prometheus:9090"
+
+services:
+  - name: ldap-primary
+    type: ldap
+    host: ldap01
+    port: 636
+    location: "servers"
+    depends_on: []
+
+  - name: kerberos-primary
+    type: kerberos
+    host: krb01
+    port: 88
+    location: "servers"
+    depends_on: []
+
+  - name: sso-keycloak
+    type: sso
+    location: "servers"
+    depends_on: [ldap-primary, kerberos-primary]
+
+  - name: nfs-storage
+    type: tcp
+    host: nfs01
+    port: 2049
+    location: "servers"
+    depends_on: [ldap-primary, kerberos-primary]
+
+hosts:
+  - name: workstation-01
+    location: "workstations"
+    agent_url: http://workstation-01:9101/metrics
+    idle_thresholds: [30m, 60m, 120m]
+
+  - name: storage-node
+    location: "servers"
+    agent_url: http://storage-node:9101/metrics
+    zfs_snapshots:
+      - dataset: "pool/home"
+        account: "DAILY"
+        max_age_days: 7
+
+certificates:
+  domains:
+    - sso.example.org
+    - vault.example.org
+    - kiwi.example.org
+    - wiki.example.org
+    - example.org
+  warn_days: 30
