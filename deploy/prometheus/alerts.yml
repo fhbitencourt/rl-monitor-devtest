@@ -1,0 +1,29 @@
+groups:
+  - name: certificates
+    rules:
+      - alert: CertificadoExpirando
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Certificado de {{ $labels.instance }} expira em {{ $value | humanize }} dias"
+          description: "Renovação automática pode estar falhando. Verificar Certbot."
+
+      - alert: CertificadoExpirado
+        expr: probe_ssl_earliest_cert_expiry - time() < 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Certificado de {{ $labels.instance }} EXPIROU"
+
+  - name: blackbox
+    rules:
+      - alert: ProbeFalhando
+        expr: probe_success == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Probe falhando para {{ $labels.instance }}"

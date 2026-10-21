@@ -1,0 +1,6 @@
+config.yaml
+.env
+*.keytab
+*.crt
+*.key
+deploy/alertmanager/telegram_token

@@ -1,0 +1,19 @@
+route:
+  receiver: telegram
+  group_by: [alertname, service]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: [severity="critical"]
+      receiver: telegram
+    - matchers: [severity="warning"]
+      receiver: telegram
+
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token_file: /etc/alertmanager/telegram_token
+        chat_id: 977167698 
+        parse_mode: Markdown
+        send_resolved: true

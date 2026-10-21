@@ -1,0 +1,47 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    monitor: rl-monitor
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: [alertmanager:9093]
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  - job_name: node
+    static_configs:
+      - targets: [node-exporter:9100]
+
+  # Blackbox: HTTPS + certificado dos 5 domínios do handoff (seção 12)
+  - job_name: blackbox-https
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://sso.linux.ime.usp.br
+          - https://vault.linux.ime.usp.br
+          - https://kiwi.linux.ime.usp.br
+          - https://wiki.linux.ime.usp.br
+          - https://linux.ime.usp.br
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Descomentar na Fase 2, quando `go run ./cmd/rl-monitor` estiver rodando no host
+  # - job_name: rl-monitor
+  #   static_configs:
+  #     - targets: [host.docker.internal:9200]
